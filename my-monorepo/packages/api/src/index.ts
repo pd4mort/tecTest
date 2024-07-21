@@ -4,10 +4,10 @@ import postRoutes from './routes/postRoutes';
 
 const server = fastify();
 
-server.register(userRoutes);
-server.register(postRoutes);
+server.register(userRoutes, { prefix: '/api' });
+server.register(postRoutes, { prefix: '/api' });
 
-server.listen({ port: 8080 }, (err, address) => {
+server.listen({ port: 3000 }, (err, address) => {
   if (err) {
     console.error(err);
     process.exit(1);
