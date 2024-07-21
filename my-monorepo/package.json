@@ -1,10 +1,13 @@
 {
   "name": "my-monorepo",
-  "version": "1.0.0",
-  "main": "index.js",
-  "license": "MIT",
   "private": true,
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "scripts": {
+    "bootstrap": "yarn install",
+    "build": "yarn workspace api build && yarn workspace db generate",
+    "start": "yarn workspace api start",
+    "dev": "yarn workspace api dev"
+  }
 }
