@@ -6,7 +6,7 @@
   ],
   "scripts": {
     "bootstrap": "yarn install",
-    "build": "yarn workspace api build && yarn workspace db generate",
+    "build": "yarn workspace @my-monorepo/db generate && yarn workspace api build",
     "start": "yarn workspace api start",
     "dev": "yarn workspace api dev"
   }
