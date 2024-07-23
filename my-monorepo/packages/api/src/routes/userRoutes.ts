@@ -33,11 +33,11 @@ async function userRoutes(server: FastifyInstance) {
   });
 
   // Ruta para crear un nuevo usuario
-  server.post('/users', async (request: FastifyRequest<{ Body: { email: string, name: string, password: string } }>, reply: FastifyReply) => {
-    const { email, name, password } = request.body;
+  server.post('/users', async (request: FastifyRequest<{ Body: { email: string, name: string, password: string, role?: string } }>, reply: FastifyReply) => {
+    const { email, name, password, role } = request.body;
     try {
       const user = await prisma.user.create({
-        data: { email, name, password }
+        data: { email, name, password, role: role ?? 'user' }
       });
       reply.send(user);
     } catch (error) {
@@ -47,13 +47,13 @@ async function userRoutes(server: FastifyInstance) {
   });
 
   // Ruta para actualizar un usuario por ID
-  server.put('/users/:id', async (request: FastifyRequest<{ Params: { id: string }, Body: { email: string, name: string, password: string } }>, reply: FastifyReply) => {
+  server.put('/users/:id', async (request: FastifyRequest<{ Params: { id: string }, Body: { email: string, name: string, password: string, role?: string } }>, reply: FastifyReply) => {
     const { id } = request.params;
-    const { email, name, password } = request.body;
+    const { email, name, password, role } = request.body;
     try {
       const user = await prisma.user.update({
         where: { id },
-        data: { email, name, password }
+        data: { email, name, password, role }
       });
       reply.send(user);
     } catch (error) {
