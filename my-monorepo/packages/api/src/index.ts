@@ -1,14 +1,14 @@
 import fastify from 'fastify';
+import userRoutes from './routes/userRoutes';
+import postRoutes from './routes/postRoutes';
+import config from './config/config';
 
 const server = fastify();
 
-// Definir una ruta simple
-server.get('/ping', async (request, reply) => {
-  return 'pong\n';
-});
+server.register(userRoutes, { prefix: config.apiPrefix });
+server.register(postRoutes, { prefix: config.apiPrefix });
 
-// Iniciar el servidor utilizando la sintaxis recomendada
-server.listen({ port: 8080 }, (err, address) => {
+server.listen({ port: config.port }, (err, address) => {
   if (err) {
     console.error(err);
     process.exit(1);
