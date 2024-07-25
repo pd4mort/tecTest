@@ -10,7 +10,7 @@ server.get('/ping', async (request, reply) => {
     return 'pong\n';
 });
 // Iniciar el servidor utilizando la sintaxis recomendada
-server.listen({ port: 8080 }, (err, address) => {
+server.listen({ port: 3000 }, (err, address) => {
     if (err) {
         console.error(err);
         process.exit(1);
