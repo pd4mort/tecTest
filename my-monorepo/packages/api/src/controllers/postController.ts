@@ -1,18 +1,23 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import prisma from '@my-monorepo/db/src/prismaClient';
+import * as postService from '../services/postService';
+import { PostBody, PostParams } from '../types/postTypes';
 import { createPostSchema, updatePostSchema, postParamsSchema } from '../validations/postValidation';
 
 export async function getAllPosts(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const posts = await prisma.post.findMany();
+    const posts = await postService.getAllPosts();
     reply.send(posts);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(error);
-    reply.status(500).send({ error: 'Error fetching posts' });
+    if (error instanceof Error) {
+      reply.status(500).send({ error: error.message });
+    } else {
+      reply.status(500).send({ error: 'Unknown error' });
+    }
   }
 }
 
-export async function getPostById(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+export async function getPostById(request: FastifyRequest<{ Params: PostParams }>, reply: FastifyReply) {
   const { id } = request.params;
   const parsed = postParamsSchema.safeParse({ id });
   if (!parsed.success) {
@@ -20,44 +25,38 @@ export async function getPostById(request: FastifyRequest<{ Params: { id: string
   }
 
   try {
-    const post = await prisma.post.findUnique({
-      where: { id }
-    });
-    if (post) {
-      reply.send(post);
-    } else {
-      reply.status(404).send({ error: 'Post not found' });
-    }
-  } catch (error) {
+    const post = await postService.getPostById(id);
+    reply.send(post);
+  } catch (error: unknown) {
     console.error(error);
-    reply.status(500).send({ error: 'Error fetching post' });
+    if (error instanceof Error) {
+      reply.status(error.message === 'Post not found' ? 404 : 500).send({ error: error.message });
+    } else {
+      reply.status(500).send({ error: 'Unknown error' });
+    }
   }
 }
 
-export async function createPost(request: FastifyRequest<{ Body: { title: string, content: string, authorId: string } }>, reply: FastifyReply) {
+export async function createPost(request: FastifyRequest<{ Body: PostBody }>, reply: FastifyReply) {
   const parsed = createPostSchema.safeParse(request.body);
   if (!parsed.success) {
     return reply.status(400).send({ error: 'Invalid post data', details: parsed.error.errors });
   }
 
-  const { title, content, authorId } = parsed.data;
   try {
-    const userExists = await prisma.user.findUnique({ where: { id: authorId } });
-    if (!userExists) {
-      return reply.status(404).send({ error: 'User not found' });
-    }
-
-    const post = await prisma.post.create({
-      data: { title, content, authorId }
-    });
-    reply.send(post);
-  } catch (error) {
+    const post = await postService.createPost(parsed.data);
+    reply.status(201).send(post); // 201 Created
+  } catch (error: unknown) {
     console.error(error);
-    reply.status(500).send({ error: 'Error creating post' });
+    if (error instanceof Error) {
+      reply.status(500).send({ error: error.message });
+    } else {
+      reply.status(500).send({ error: 'Unknown error' });
+    }
   }
 }
 
-export async function updatePost(request: FastifyRequest<{ Params: { id: string }, Body: { title?: string, content?: string, authorId?: string } }>, reply: FastifyReply) {
+export async function updatePost(request: FastifyRequest<{ Params: PostParams; Body: Partial<PostBody> }>, reply: FastifyReply) {
   const { id } = request.params;
   const parsedParams = postParamsSchema.safeParse({ id });
   if (!parsedParams.success) {
@@ -69,27 +68,20 @@ export async function updatePost(request: FastifyRequest<{ Params: { id: string 
     return reply.status(400).send({ error: 'Invalid post data', details: parsedBody.error.errors });
   }
 
-  const { title, content, authorId } = parsedBody.data;
   try {
-    if (authorId) {
-      const userExists = await prisma.user.findUnique({ where: { id: authorId } });
-      if (!userExists) {
-        return reply.status(404).send({ error: 'User not found' });
-      }
-    }
-
-    const post = await prisma.post.update({
-      where: { id },
-      data: { title, content, authorId }
-    });
+    const post = await postService.updatePost(id, parsedBody.data);
     reply.send(post);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(error);
-    reply.status(500).send({ error: 'Error updating post' });
+    if (error instanceof Error) {
+      reply.status(error.message === 'Post not found' ? 404 : 500).send({ error: error.message });
+    } else {
+      reply.status(500).send({ error: 'Unknown error' });
+    }
   }
 }
 
-export async function deletePost(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+export async function deletePost(request: FastifyRequest<{ Params: PostParams }>, reply: FastifyReply) {
   const { id } = request.params;
   const parsed = postParamsSchema.safeParse({ id });
   if (!parsed.success) {
@@ -97,12 +89,14 @@ export async function deletePost(request: FastifyRequest<{ Params: { id: string 
   }
 
   try {
-    await prisma.post.delete({
-      where: { id }
-    });
-    reply.status(204).send();
-  } catch (error) {
+    await postService.deletePost(id);
+    reply.status(204).send(); // 204 No Content
+  } catch (error: unknown) {
     console.error(error);
-    reply.status(500).send({ error: 'Error deleting post' });
+    if (error instanceof Error) {
+      reply.status(error.message === 'Post not found' ? 404 : 500).send({ error: error.message });
+    } else {
+      reply.status(500).send({ error: 'Unknown error' });
+    }
   }
 }
