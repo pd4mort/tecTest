@@ -1,8 +1,9 @@
+// src/types/userTypes.ts
 export interface UserBody {
   email: string;
   name: string;
   password: string;
-  role?: string;
+  role: string;
 }
 
 export interface UserParams {
