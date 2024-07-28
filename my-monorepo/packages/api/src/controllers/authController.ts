@@ -4,6 +4,11 @@ import argon2 from 'argon2';
 import prisma from '@my-monorepo/db/src/prismaClient';
 import { UserBody } from '../types/userTypes';
 
+interface UserPayload {
+  id: string;
+  role: string;
+}
+
 export async function registerUser(request: FastifyRequest<{ Body: UserBody }>, reply: FastifyReply) {
   try {
     const { email, name, password, role } = request.body;
@@ -13,7 +18,7 @@ export async function registerUser(request: FastifyRequest<{ Body: UserBody }>, 
       data: { email, name, password: hashedPassword, role }
     });
 
-    const token = request.server.jwt.sign({ id: user.id, email: user.email });
+    const token = request.server.jwt.sign({ id: user.id, role: user.role } as UserPayload);
     reply.status(201).send({ user, token });
   } catch (error) {
     console.error('Error registering user:', error);
@@ -31,7 +36,7 @@ export async function loginUser(request: FastifyRequest<{ Body: { email: string,
       return;
     }
 
-    const token = request.server.jwt.sign({ id: user.id, email: user.email });
+    const token = request.server.jwt.sign({ id: user.id, role: user.role } as UserPayload);
     reply.send({ user, token });
   } catch (error) {
     console.error('Error logging in:', error);
