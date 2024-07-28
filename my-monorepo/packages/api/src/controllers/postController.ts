@@ -2,6 +2,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import * as postService from '../services/postService';
 import { PostBody, PostParams } from '../types/postTypes';
 import { createPostSchema, updatePostSchema, postParamsSchema } from '../validations/postValidation';
+import { JwtPayload } from '../types/authTypes';
 
 export async function getAllPosts(request: FastifyRequest, reply: FastifyReply) {
   try {
@@ -44,7 +45,8 @@ export async function createPost(request: FastifyRequest<{ Body: PostBody }>, re
   }
 
   try {
-    const post = await postService.createPost(parsed.data);
+    const user = request.user as JwtPayload;
+    const post = await postService.createPost({ ...parsed.data, authorId: user.id });
     reply.status(201).send(post); // 201 Created
   } catch (error: unknown) {
     console.error(error);

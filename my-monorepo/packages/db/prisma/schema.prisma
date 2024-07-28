@@ -15,9 +15,9 @@ datasource db {
 
 model User {
   id        String   @id @default(uuid()) @db.Uuid
-  email     String   @unique
-  name      String
-  password  String
+  email     String   @unique @db.VarChar(255) // Restricción única y longitud máxima
+  name      String   @db.VarChar(255) // Longitud máxima para el nombre
+  password  String   @db.VarChar(255) // Longitud máxima para la contraseña
   posts     Post[]
   role      String?  @default("user")
   createdAt DateTime @default(now())
@@ -26,9 +26,9 @@ model User {
 
 model Post {
   id        String   @id @default(uuid()) @db.Uuid
-  title     String
-  content   String
-  authorId  String   @db.Uuid // Ensure this is UUID
+  title     String   @db.VarChar(255) // Longitud máxima para el título
+  content   String   @db.Text // Texto largo
+  authorId  String   @db.Uuid // Asegura que sea UUID
   author    User     @relation(fields: [authorId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
