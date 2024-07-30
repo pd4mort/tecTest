@@ -2,7 +2,9 @@
   "name": "my-monorepo",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/api",
+    "packages/services",
+    "packages/db"
   ],
   "scripts": {
     "bootstrap": "yarn install",
