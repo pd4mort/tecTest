@@ -8,10 +8,8 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@my-monorepo/db": ["../db/src/prismaClient.ts"],
-      "@my-monorepo/services": ["../services/src/imageService.ts"]
-    },
-    "typeRoots": ["./src/types", "./node_modules/@types"]
+      "@my-monorepo/*": ["../*"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules"]
