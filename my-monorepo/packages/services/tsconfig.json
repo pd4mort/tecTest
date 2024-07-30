@@ -8,10 +8,10 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@my-monorepo/services": ["../services/src/fileUploadService"]
+      "@my-monorepo/services": ["./fileUploadService.ts"]
     },
     "typeRoots": ["./src/types", "./node_modules/@types"]
   },
-  "include": ["src/**/*.ts"],
+  "include": ["fileUploadService.ts"],
   "exclude": ["node_modules"]
 }
