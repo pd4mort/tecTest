@@ -1,5 +1,6 @@
 {
   "name": "@my-monorepo/services",
+  "name": "@my-monorepo/services",
   "version": "1.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
