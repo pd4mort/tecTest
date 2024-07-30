@@ -1,3 +1,5 @@
+
+/*
 {
   "type": "service_account",
   "project_id": "tectest-93f8e",
@@ -11,3 +13,4 @@
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-19xoj%40tectest-93f8e.iam.gserviceaccount.com",
   "universe_domain": "googleapis.com"
 }
+*/
