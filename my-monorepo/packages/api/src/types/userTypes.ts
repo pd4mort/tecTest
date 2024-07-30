@@ -8,4 +8,5 @@ export interface UserBody {
   name: string;
   password: string;
   role: 'god' | 'admin' | 'user';
+  profilePicture?: string;
 }
