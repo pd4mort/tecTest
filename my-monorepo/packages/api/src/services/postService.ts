@@ -1,5 +1,16 @@
 import prisma from '@my-monorepo/db/src/prismaClient';
-import { PostBody, PostParams } from '../types/postTypes';
+import { PostBody } from '../types/postTypes';
+import wss from '@my-monorepo/services/notifications/websocketServer';
+import WebSocket from 'ws';
+
+//Notifications
+const notifyClients = (message: string) => {
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+};
 
 // Get all posts
 export async function getAllPosts() {
@@ -30,9 +41,15 @@ export async function getPostById(id: string) {
 // Create a new post
 export async function createPost(data: PostBody) {
   try {
-    return await prisma.post.create({
+    const newPost = await prisma.post.create({
       data
     });
+    
+    // Notificar a los clientes sobre el nuevo post
+    notifyClients(`New post created: ${newPost.title}`);
+
+    // Retornar el post creado
+    return newPost;
   } catch (error) {
     console.error('Error creating post:', error);
     throw new Error('Error creating post');

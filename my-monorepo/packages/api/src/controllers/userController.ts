@@ -3,7 +3,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import prisma from '@my-monorepo/db/src/prismaClient';
 import { UserParams, UserBody } from '../types/userTypes';
 import { JwtPayload } from '../types/authTypes';
-import { uploadImage, getImageUrl } from '@my-monorepo/services/src/imageService';
+import { uploadImage, getImageUrl } from '@my-monorepo/services/firebase/imageService';
 
 export async function getAllUsers(request: FastifyRequest, reply: FastifyReply) {
   const users = await prisma.user.findMany();
