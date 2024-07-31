@@ -14,8 +14,8 @@
         "../services/notifications/websocketServer.ts"
       ]
     },
-    "typeRoots": ["./src/types", "./node_modules/@types"]
+    "types": ["jest"]  // Mantén esto para que TypeScript sepa que debe incluir los tipos de Jest
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "api/**/*.ts"],
   "exclude": ["node_modules"]
 }
