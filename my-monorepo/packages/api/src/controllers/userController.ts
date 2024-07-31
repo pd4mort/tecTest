@@ -1,7 +1,9 @@
+// src/controllers/userController.ts
 import { FastifyRequest, FastifyReply } from 'fastify';
 import prisma from '@my-monorepo/db/src/prismaClient';
 import { UserParams, UserBody } from '../types/userTypes';
 import { JwtPayload } from '../types/authTypes';
+import { uploadImage, getImageUrl } from '@my-monorepo/services/firebase/imageService';
 
 export async function getAllUsers(request: FastifyRequest, reply: FastifyReply) {
   const users = await prisma.user.findMany();
@@ -33,19 +35,16 @@ export async function createUser(request: FastifyRequest<{ Body: UserBody }>, re
 export async function updateUser(request: FastifyRequest<{ Params: UserParams; Body: Partial<UserBody> }>, reply: FastifyReply) {
   const { id } = request.params;
   const { email, name, role } = request.body;
-  const user = request.user as JwtPayload; // Usa el tipo JwtPayload para tipar el usuario autenticado
+  const user = request.user as JwtPayload;
 
-  // Verificar si el usuario tiene permiso para actualizar el recurso
   if (user.role !== 'god' && user.role !== 'admin' && user.id !== id) {
     reply.status(403).send({ error: 'Forbidden: You can only edit your own profile' });
     return;
   }
 
-  // Si el usuario es de rol 'user', no puede cambiar su propio rol
   const updateData: Partial<UserBody> = { email, name };
   if (user.role !== 'god' && user.role !== 'admin') {
     delete updateData.role;
-    reply.status(403).send({ error: 'Forbidden: You can only edit your own profile' });
   } else {
     updateData.role = role;
   }
@@ -64,4 +63,35 @@ export async function deleteUser(request: FastifyRequest<{ Params: UserParams }>
   await prisma.user.delete({ where: { id } });
 
   reply.status(204).send();
+}
+
+// image
+export async function uploadProfilePicture(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const user = request.user as JwtPayload;
+    
+    // Obtener el archivo del cuerpo de la solicitud
+    const data = await request.file();
+
+    if (!data) {
+      reply.status(400).send({ error: 'No file uploaded' });
+      return;
+    }
+
+    // Usar Buffer para el contenido del archivo
+    const fileBuffer = await data.toBuffer();
+
+    const filename = await uploadImage(fileBuffer, `${user.id}-profile-picture`);
+    const imageUrl = await getImageUrl(filename);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { profilePicture: imageUrl },
+    });
+
+    reply.send({ imageUrl });
+  } catch (error) {
+    console.error('Error uploading profile picture:', error);
+    reply.status(500).send({ error: 'Error uploading profile picture' });
+  }
 }
