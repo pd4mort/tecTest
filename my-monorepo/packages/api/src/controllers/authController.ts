@@ -19,12 +19,24 @@ export async function registerUser(request: FastifyRequest<{ Body: UserBody }>, 
     });
 
     const token = request.server.jwt.sign({ id: user.id, role: user.role } as UserPayload);
-    reply.status(201).send({ user, token });
+    const { password: _, ...userWithoutPassword } = user;
+    reply.status(201).send({ user: userWithoutPassword, token });
   } catch (error) {
-    console.error('Error registering user:', error);
-    reply.status(500).send({ error: 'Error registering user' });
+    console.error('Caught error:', error);
+    if (error instanceof Error) {
+      if ((error as any).code === 'P2002') {
+        reply.status(400).send({ error: 'Email already exists' });
+      } else {
+        console.error('Error registering user:', error);
+        reply.status(500).send({ error: 'Error registering user' });
+      }
+    } else {
+      console.error('Unexpected error:', error);
+      reply.status(500).send({ error: 'Unexpected error' });
+    }
   }
 }
+
 
 export async function loginUser(request: FastifyRequest<{ Body: { email: string, password: string } }>, reply: FastifyReply) {
   try {

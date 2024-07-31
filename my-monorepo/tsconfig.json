@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+      "target": "es2017",
+      "module": "commonjs",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "types": ["node", "jest"],
+      "baseUrl": "./",
+      "paths": {
+        "@my-monorepo/db/*": ["packages/db/src/*"],
+        "@my-monorepo/services/*": ["packages/services/src/*"],
+        "@my-monorepo/api/*": ["packages/api/src/*"]
+      }
+    },
+    "include": ["packages/**/*"],
+    "exclude": ["node_modules", "dist"]
+  }
+  

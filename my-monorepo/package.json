@@ -8,6 +8,13 @@
     "bootstrap": "yarn install",
     "build": "yarn workspace @my-monorepo/db generate && yarn workspace api build",
     "start": "yarn workspace api start",
-    "dev": "yarn workspace api dev"
+    "dev": "yarn workspace api dev",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/mocha": "^10.0.7",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.3"
   }
 }
