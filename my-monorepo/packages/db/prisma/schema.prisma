@@ -19,7 +19,7 @@ model User {
   name      String   @db.VarChar(255) // Longitud máxima para el nombre
   password  String   @db.VarChar(255) // Longitud máxima para la contraseña
   posts     Post[]
-  role      String?  @default("user")
+  role      String  @default("user")
   profilePicture String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

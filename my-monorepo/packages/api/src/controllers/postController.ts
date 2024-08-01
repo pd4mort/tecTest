@@ -1,104 +1,95 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import * as postService from '../services/postService';
-import { PostBody, PostParams } from '../types/postTypes';
-import { createPostSchema, updatePostSchema, postParamsSchema } from '../validations/postValidation';
-import { JwtPayload } from '../types/authTypes';
+import prisma from '@my-monorepo/db/src/prismaClient';
+import { PostBody } from '../types/postTypes';
+import { string } from 'zod';
 
-export async function getAllPosts(request: FastifyRequest, reply: FastifyReply) {
-  try {
-    const posts = await postService.getAllPosts();
-    reply.send(posts);
-  } catch (error: unknown) {
-    console.error(error);
-    if (error instanceof Error) {
-      reply.status(500).send({ error: error.message });
-    } else {
-      reply.status(500).send({ error: 'Unknown error' });
-    }
-  }
-}
-
-export async function getPostById(request: FastifyRequest<{ Params: PostParams }>, reply: FastifyReply) {
-  const { id } = request.params;
-  const parsed = postParamsSchema.safeParse({ id });
-  if (!parsed.success) {
-    return reply.status(400).send({ error: 'Invalid post ID' });
-  }
-
-  try {
-    const post = await postService.getPostById(id);
-    reply.send(post);
-  } catch (error: unknown) {
-    console.error(error);
-    if (error instanceof Error) {
-      reply.status(error.message === 'Post not found' ? 404 : 500).send({ error: error.message });
-    } else {
-      reply.status(500).send({ error: 'Unknown error' });
-    }
-  }
-}
-
+/**
+ * Crea un nuevo post.
+ * @param {FastifyRequest} request - Solicitud con datos del post.
+ * @param {FastifyReply} reply - Respuesta del servidor.
+ */
 export async function createPost(request: FastifyRequest<{ Body: PostBody }>, reply: FastifyReply) {
-  const parsed = createPostSchema.safeParse(request.body);
-  if (!parsed.success) {
-    return reply.status(400).send({ error: 'Invalid post data', details: parsed.error.errors });
-  }
-
   try {
-    const user = request.user as JwtPayload;
-    const post = await postService.createPost({ ...parsed.data, authorId: user.id });
-    reply.status(201).send(post); // 201 Created
-  } catch (error: unknown) {
-    console.error(error);
-    if (error instanceof Error) {
-      reply.status(500).send({ error: error.message });
-    } else {
-      reply.status(500).send({ error: 'Unknown error' });
-    }
+    const { title, content, authorId } = request.body;
+
+    // Creación del post en la base de datos
+    const post = await prisma.post.create({
+      data: { title, content, authorId }
+    });
+
+    // Respuesta con el post creado
+    reply.status(201).send(post);
+  } catch (error) {
+    console.error('Error creating post:', error);
+    reply.status(500).send({ error: 'Error creating post' });
   }
 }
 
-export async function updatePost(request: FastifyRequest<{ Params: PostParams; Body: Partial<PostBody> }>, reply: FastifyReply) {
-  const { id } = request.params;
-  const parsedParams = postParamsSchema.safeParse({ id });
-  if (!parsedParams.success) {
-    return reply.status(400).send({ error: 'Invalid post ID' });
-  }
-
-  const parsedBody = updatePostSchema.safeParse(request.body);
-  if (!parsedBody.success) {
-    return reply.status(400).send({ error: 'Invalid post data', details: parsedBody.error.errors });
-  }
-
+/**
+ * Obtiene un post por su ID.
+ * @param {FastifyRequest} request - Solicitud con el ID del post.
+ * @param {FastifyReply} reply - Respuesta del servidor.
+ */
+export async function getPostById(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
   try {
-    const post = await postService.updatePost(id, parsedBody.data);
+    const { id } = request.params;
+
+    // Búsqueda del post en la base de datos
+    const post = await prisma.post.findUnique({ where: { id: string } });
+
+    if (!post) {
+      reply.status(404).send({ error: 'Post not found' });
+      return;
+    }
+
+    // Respuesta con el post encontrado
     reply.send(post);
-  } catch (error: unknown) {
-    console.error(error);
-    if (error instanceof Error) {
-      reply.status(error.message === 'Post not found' ? 404 : 500).send({ error: error.message });
-    } else {
-      reply.status(500).send({ error: 'Unknown error' });
-    }
+  } catch (error) {
+    console.error('Error retrieving post:', error);
+    reply.status(500).send({ error: 'Error retrieving post' });
   }
 }
 
-export async function deletePost(request: FastifyRequest<{ Params: PostParams }>, reply: FastifyReply) {
-  const { id } = request.params;
-  const parsed = postParamsSchema.safeParse({ id });
-  if (!parsed.success) {
-    return reply.status(400).send({ error: 'Invalid post ID' });
-  }
-
+/**
+ * Actualiza un post existente.
+ * @param {FastifyRequest} request - Solicitud con los datos del post a actualizar.
+ * @param {FastifyReply} reply - Respuesta del servidor.
+ */
+export async function updatePost(request: FastifyRequest<{ Params: { id: string }, Body: Partial<PostBody> }>, reply: FastifyReply) {
   try {
-    await postService.deletePost(id);
-    reply.status(204).send(); // 204 No Content
-  } catch (error: unknown) {
-    console.error(error);
-    if (error instanceof Error) {
-      reply.status(error.message === 'Post not found' ? 404 : 500).send({ error: error.message });
-    } else {
-      reply.status(500).send({ error: 'Unknown error' });
-    }
+    const { id } = request.params;
+    const { title, content } = request.body;
+
+    // Actualización del post en la base de datos
+    const post = await prisma.post.update({
+      where: { id: parseInt(id, 10) },
+      data: { title, content }
+    });
+
+    // Respuesta con el post actualizado
+    reply.send(post);
+  } catch (error) {
+    console.error('Error updating post:', error);
+    reply.status(500).send({ error: 'Error updating post' });
+  }
+}
+
+/**
+ * Elimina un post por su ID.
+ * @param {FastifyRequest} request - Solicitud con el ID del post a eliminar.
+ * @param {FastifyReply} reply - Respuesta del servidor.
+ */
+export async function deletePost(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+  try {
+    const { id } = request.params;
+
+    // Eliminación del post de la base de datos
+    await prisma.post.delete({ where: { id: parseInt(id, 10) } });
+
+    // Respuesta de confirmación
+    reply.status(204).send();
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    reply.status(500).send({ error: 'Error deleting post' });
   }
 }

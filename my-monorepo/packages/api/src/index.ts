@@ -4,7 +4,7 @@ import postRoutes from './routes/postRoutes';
 import config from './config/config';
 import auth from './plugins/auth';
 import fastifyMultipart from '@fastify/multipart';
-console.log(config.port)
+
 const server = fastify();
 
 // Registrar el plugin para manejar multipart/form-data
