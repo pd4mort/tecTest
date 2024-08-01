@@ -1,8 +1,10 @@
+import { env } from '../validations/envValidation'
+
 const config = {
   apiPrefix: '/api',
-  port: 3000,
+  port: env.PORT,
   jwt: {
-    secret: 'supersecret'
+    secret: env.SECRET_JWT
   }
 };
 
