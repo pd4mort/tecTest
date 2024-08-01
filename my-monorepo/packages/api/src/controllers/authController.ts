@@ -13,10 +13,11 @@ import { hashPassword, verifyPassword, generateToken } from '../services/authSer
 export async function registerUser(request: FastifyRequest<{ Body: UserBody }>, reply: FastifyReply): Promise<void> {
   try {
     const { email, name, password, role } = request.body;
+    const userRole = role || 'user';
     const hashedPassword = await hashPassword(password);
 
     const user = await prisma.user.create({
-      data: { email, name, password: hashedPassword, role }
+      data: { email, name, password: hashedPassword, role: userRole }
     });
 
     const token = generateToken({ id: user.id, role: user.role } as JwtPayload, request.server);

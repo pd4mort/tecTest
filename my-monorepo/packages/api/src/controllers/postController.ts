@@ -10,7 +10,7 @@ import { JwtPayload } from '../types/authTypes';
  * @param {FastifyReply} reply - Server response.
  * @returns {Promise<void>} - Returns nothing directly, but sends the response with the created post on success.
  */
-export async function createPost(request: FastifyRequest<{ Body: PostBody }>, reply: FastifyReply): Promise<void> {
+export async function createPostController(request: FastifyRequest<{ Body: PostBody }>, reply: FastifyReply): Promise<void> {
   const parsed = createPostSchema.safeParse(request.body);
   if (!parsed.success) {
     return reply.status(400).send({ error: 'Invalid post data', details: parsed.error.errors });
@@ -27,12 +27,31 @@ export async function createPost(request: FastifyRequest<{ Body: PostBody }>, re
 }
 
 /**
+ * Retrieves all posts from the database.
+ * @param {FastifyRequest} request - The Fastify request object.
+ * @param {FastifyReply} reply - The Fastify reply object.
+ * @returns {Promise<void>} - Sends a response with the list of all posts or an error message.
+ */
+export async function getAllPostsController(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  try {
+    // Fetch all posts from the service
+    const posts = await postService.getAllPosts();
+
+    // Send the list of posts in the response
+    reply.send(posts);
+  } catch (error) {
+    console.error('Error retrieving posts:', error);
+    reply.status(500).send({ error: 'Error retrieving posts' });
+  }
+}
+
+/**
  * Get a post by its ID.
  * @param {FastifyRequest<{ Params: PostParams }>} request - Request with post ID.
  * @param {FastifyReply} reply - Server response.
  * @returns {Promise<void>} - Returns nothing directly, but sends the response with the requested message on success.
  */
-export async function getPostById(request: FastifyRequest<{ Params: PostParams }>, reply: FastifyReply): Promise<void> {
+export async function getPostByIdController(request: FastifyRequest<{ Params: PostParams }>, reply: FastifyReply): Promise<void> {
   const { id } = request.params;
   const parsed = postParamsSchema.safeParse({ id });
   if (!parsed.success) {
@@ -58,7 +77,7 @@ export async function getPostById(request: FastifyRequest<{ Params: PostParams }
  * @param {FastifyReply} reply - Server response.
  * @returns {Promise<void>} - Returns nothing directly, but sends the response with the updated message in case of success.
  */
-export async function updatePost(request: FastifyRequest<{ Params: PostParams; Body: Partial<PostBody> }>, reply: FastifyReply): Promise<void> {
+export async function updatePostController(request: FastifyRequest<{ Params: PostParams; Body: Partial<PostBody> }>, reply: FastifyReply): Promise<void> {
   const { id } = request.params;
   const parsedParams = postParamsSchema.safeParse({ id });
   if (!parsedParams.success) {
@@ -89,7 +108,7 @@ export async function updatePost(request: FastifyRequest<{ Params: PostParams; B
  * @param {FastifyReply} reply - Server response.
  * @returns {Promise<void>} - Returns nothing directly, but sends the response with the post's deletion status on success.
  */
-export async function deletePost(request: FastifyRequest<{ Params: PostParams }>, reply: FastifyReply): Promise<void> {
+export async function deletePostController(request: FastifyRequest<{ Params: PostParams }>, reply: FastifyReply): Promise<void> {
   const { id } = request.params;
   const parsed = postParamsSchema.safeParse({ id });
   if (!parsed.success) {

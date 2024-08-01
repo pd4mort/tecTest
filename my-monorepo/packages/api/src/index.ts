@@ -7,17 +7,17 @@ import fastifyMultipart from '@fastify/multipart';
 
 const server = fastify();
 
-// Registrar el plugin para manejar multipart/form-data
+// Register the plugin to handle multipart/form-data
 server.register(fastifyMultipart);
 
-// Registrar el plugin de autenticación
+// Register the authentication plugin
 server.register(auth);
 
-// Registrar rutas
+// Register routes
 server.register(userRoutes, { prefix: config.apiPrefix });
 server.register(postRoutes, { prefix: config.apiPrefix });
 
-// Iniciar el servidor
+// Start the server
 server.listen({ port: parseInt(config.port) }, (err, address) => {
   
   if (err) {
