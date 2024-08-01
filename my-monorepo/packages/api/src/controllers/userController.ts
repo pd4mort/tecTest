@@ -1,28 +1,24 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import prisma from '@my-monorepo/db/src/prismaClient';
-import { UserBody } from '../types/userTypes';
+import { UserBody, UserParams, UserRole  } from '../types/userTypes';
+import { JwtPayload } from '../types/authTypes';
 
 /**
- * Crea un nuevo usuario.
- * @param {FastifyRequest} request - Solicitud con los datos del usuario.
- * @param {FastifyReply} reply - Respuesta del servidor.
+ * Creates a new user.
+ * @param {FastifyRequest<{ Body: UserBody }>} request - Request containing user data.
+ * @param {FastifyReply} reply - Server response.
+ * @returns {Promise<void>} - Returns nothing directly, but sends the response with the created user upon success.
  */
-export async function createUser(request: FastifyRequest<{ Body: UserBody }>, reply: FastifyReply) {
+export async function createUser(request: FastifyRequest<{ Body: UserBody }>, reply: FastifyReply): Promise<void> {
   try {
-    const { username, email, password } = request.body;
+    const { email, name, password, role } = request.body;
 
-    // Validación simple de datos de entrada
-    if (!username || !email || !password) {
-      reply.status(400).send({ error: 'Invalid input' });
-      return;
-    }
-
-    // Creación del usuario en la base de datos
+    // Create the user in the database
     const user = await prisma.user.create({
-      data: { username, email, password }
+      data: { email, name, password, role }
     });
 
-    // Respuesta con el usuario creado
+    // Respond with the created user
     reply.status(201).send(user);
   } catch (error) {
     console.error('Error creating user:', error);
@@ -31,23 +27,24 @@ export async function createUser(request: FastifyRequest<{ Body: UserBody }>, re
 }
 
 /**
- * Obtiene un usuario por su ID.
- * @param {FastifyRequest} request - Solicitud con el ID del usuario.
- * @param {FastifyReply} reply - Respuesta del servidor.
+ * Retrieves a user by their ID.
+ * @param {FastifyRequest<{ Params: UserParams }>} request - Request containing the user ID.
+ * @param {FastifyReply} reply - Server response.
+ * @returns {Promise<void>} - Returns nothing directly, but sends the response with the requested user upon success.
  */
-export async function getUserById(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+export async function getUserById(request: FastifyRequest<{ Params: UserParams }>, reply: FastifyReply): Promise<void> {
   try {
     const { id } = request.params;
 
-    // Búsqueda del usuario en la base de datos
-    const user = await prisma.user.findUnique({ where: { id: parseInt(id, 10) } });
+    // Fetch the user from the database
+    const user = await prisma.user.findUnique({ where: { id } });
 
     if (!user) {
       reply.status(404).send({ error: 'User not found' });
       return;
     }
 
-    // Respuesta con el usuario encontrado
+    // Respond with the found user
     reply.send(user);
   } catch (error) {
     console.error('Error retrieving user:', error);
@@ -56,29 +53,43 @@ export async function getUserById(request: FastifyRequest<{ Params: { id: string
 }
 
 /**
- * Actualiza un usuario existente.
- * @param {FastifyRequest} request - Solicitud con los datos del usuario a actualizar.
- * @param {FastifyReply} reply - Respuesta del servidor.
+ * Updates an existing user.
+ * @param {FastifyRequest<{ Params: UserParams; Body: Partial<UserBody> }>} request - Request containing user data to update.
+ * @param {FastifyReply} reply - Server response.
+ * @returns {Promise<void>} - Returns nothing directly, but sends the response with the updated user upon success.
  */
-export async function updateUser(request: FastifyRequest<{ Params: { id: string }, Body: Partial<UserBody> }>, reply: FastifyReply) {
+export async function updateUser(request: FastifyRequest<{ Params: UserParams; Body: Partial<UserBody> }>, reply: FastifyReply): Promise<void> {
   try {
     const { id } = request.params;
-    const { username, email, password } = request.body;
+    const { email, name, password, role } = request.body;
+    const user = request.user as JwtPayload; // Use JwtPayload type for authenticated user
 
-    // Validación de datos actualizados
-    if (!username && !email && !password) {
-      reply.status(400).send({ error: 'No valid fields provided for update' });
+    // Verify if the user has permission to update the resource
+    if (user.role !== UserRole.God && user.role !== UserRole.Admin && user.id !== id) {
+      reply.status(403).send({ error: 'Forbidden: You can only edit your own profile' });
       return;
     }
 
-    // Actualización del usuario en la base de datos
-    const user = await prisma.user.update({
-      where: { id: parseInt(id, 10) },
-      data: { username, email, password }
+    // Users with 'user' role cannot change their own role
+    const updateData: Partial<UserBody> = { email, name, password };
+    if (user.role !== UserRole.God && user.role !== UserRole.Admin && role) {
+      reply.status(403).send({ error: 'Forbidden: You cannot change your role' });
+      return;
+    }
+
+    // If the user has the necessary permissions, they can update the role
+    if (role) {
+      updateData.role = role;
+    }
+
+    // Update the user in the database
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: updateData
     });
 
-    // Respuesta con el usuario actualizado
-    reply.send(user);
+    // Respond with the updated user
+    reply.send(updatedUser);
   } catch (error) {
     console.error('Error updating user:', error);
     reply.status(500).send({ error: 'Error updating user' });
@@ -86,18 +97,26 @@ export async function updateUser(request: FastifyRequest<{ Params: { id: string 
 }
 
 /**
- * Elimina un usuario por su ID.
- * @param {FastifyRequest} request - Solicitud con el ID del usuario a eliminar.
- * @param {FastifyReply} reply - Respuesta del servidor.
+ * Deletes a user by their ID.
+ * @param {FastifyRequest<{ Params: UserParams }>} request - Request containing the user ID to delete.
+ * @param {FastifyReply} reply - Server response.
+ * @returns {Promise<void>} - Returns nothing directly, but sends the response with the user deletion status upon success.
  */
-export async function deleteUser(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+export async function deleteUser(request: FastifyRequest<{ Params: UserParams }>, reply: FastifyReply): Promise<void> {
   try {
     const { id } = request.params;
+    const user = request.user as JwtPayload;
 
-    // Eliminación del usuario de la base de datos
-    await prisma.user.delete({ where: { id: parseInt(id, 10) } });
+    // Verify if the user has permission to delete the resource
+    if (user.role !== UserRole.God && user.role !== UserRole.Admin && user.id !== id) {
+      reply.status(403).send({ error: 'Forbidden: You can only delete your own profile' });
+      return;
+    }
 
-    // Respuesta de confirmación
+    // Delete the user from the database
+    await prisma.user.delete({ where: { id } });
+
+    // Respond with no content
     reply.status(204).send();
   } catch (error) {
     console.error('Error deleting user:', error);

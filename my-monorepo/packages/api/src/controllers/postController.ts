@@ -1,23 +1,24 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import prisma from '@my-monorepo/db/src/prismaClient';
-import { PostBody } from '../types/postTypes';
-import { string } from 'zod';
+import * as postService from '../services/postService';
+import { PostBody, PostParams } from '../types/postTypes';
+import { createPostSchema, updatePostSchema, postParamsSchema } from '../validations/postValidation';
+import { JwtPayload } from '../types/authTypes';
 
 /**
- * Crea un nuevo post.
- * @param {FastifyRequest} request - Solicitud con datos del post.
- * @param {FastifyReply} reply - Respuesta del servidor.
+ * Create a new post.
+ * @param {FastifyRequest<{ Body: PostBody }>} request - Request with post data.
+ * @param {FastifyReply} reply - Server response.
+ * @returns {Promise<void>} - Returns nothing directly, but sends the response with the created post on success.
  */
-export async function createPost(request: FastifyRequest<{ Body: PostBody }>, reply: FastifyReply) {
+export async function createPost(request: FastifyRequest<{ Body: PostBody }>, reply: FastifyReply): Promise<void> {
+  const parsed = createPostSchema.safeParse(request.body);
+  if (!parsed.success) {
+    return reply.status(400).send({ error: 'Invalid post data', details: parsed.error.errors });
+  }
+
   try {
-    const { title, content, authorId } = request.body;
-
-    // Creación del post en la base de datos
-    const post = await prisma.post.create({
-      data: { title, content, authorId }
-    });
-
-    // Respuesta con el post creado
+    const user = request.user as JwtPayload;
+    const post = await postService.createPost({ ...parsed.data, authorId: user.id });
     reply.status(201).send(post);
   } catch (error) {
     console.error('Error creating post:', error);
@@ -26,23 +27,24 @@ export async function createPost(request: FastifyRequest<{ Body: PostBody }>, re
 }
 
 /**
- * Obtiene un post por su ID.
- * @param {FastifyRequest} request - Solicitud con el ID del post.
- * @param {FastifyReply} reply - Respuesta del servidor.
+ * Get a post by its ID.
+ * @param {FastifyRequest<{ Params: PostParams }>} request - Request with post ID.
+ * @param {FastifyReply} reply - Server response.
+ * @returns {Promise<void>} - Returns nothing directly, but sends the response with the requested message on success.
  */
-export async function getPostById(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+export async function getPostById(request: FastifyRequest<{ Params: PostParams }>, reply: FastifyReply): Promise<void> {
+  const { id } = request.params;
+  const parsed = postParamsSchema.safeParse({ id });
+  if (!parsed.success) {
+    return reply.status(400).send({ error: 'Invalid post ID' });
+  }
+
   try {
-    const { id } = request.params;
-
-    // Búsqueda del post en la base de datos
-    const post = await prisma.post.findUnique({ where: { id: string } });
-
+    const post = await postService.getPostById(id);
     if (!post) {
       reply.status(404).send({ error: 'Post not found' });
       return;
     }
-
-    // Respuesta con el post encontrado
     reply.send(post);
   } catch (error) {
     console.error('Error retrieving post:', error);
@@ -51,22 +53,29 @@ export async function getPostById(request: FastifyRequest<{ Params: { id: string
 }
 
 /**
- * Actualiza un post existente.
- * @param {FastifyRequest} request - Solicitud con los datos del post a actualizar.
- * @param {FastifyReply} reply - Respuesta del servidor.
+ * Update an existing post.
+ * @param {FastifyRequest<{ Params: PostParams; Body: Partial<PostBody> }>} request - Request with the post data to update.
+ * @param {FastifyReply} reply - Server response.
+ * @returns {Promise<void>} - Returns nothing directly, but sends the response with the updated message in case of success.
  */
-export async function updatePost(request: FastifyRequest<{ Params: { id: string }, Body: Partial<PostBody> }>, reply: FastifyReply) {
+export async function updatePost(request: FastifyRequest<{ Params: PostParams; Body: Partial<PostBody> }>, reply: FastifyReply): Promise<void> {
+  const { id } = request.params;
+  const parsedParams = postParamsSchema.safeParse({ id });
+  if (!parsedParams.success) {
+    return reply.status(400).send({ error: 'Invalid post ID' });
+  }
+
+  const parsedBody = updatePostSchema.safeParse(request.body);
+  if (!parsedBody.success) {
+    return reply.status(400).send({ error: 'Invalid post data', details: parsedBody.error.errors });
+  }
+
   try {
-    const { id } = request.params;
-    const { title, content } = request.body;
-
-    // Actualización del post en la base de datos
-    const post = await prisma.post.update({
-      where: { id: parseInt(id, 10) },
-      data: { title, content }
-    });
-
-    // Respuesta con el post actualizado
+    const post = await postService.updatePost(id, parsedBody.data);
+    if (!post) {
+      reply.status(404).send({ error: 'Post not found' });
+      return;
+    }
     reply.send(post);
   } catch (error) {
     console.error('Error updating post:', error);
@@ -75,18 +84,20 @@ export async function updatePost(request: FastifyRequest<{ Params: { id: string 
 }
 
 /**
- * Elimina un post por su ID.
- * @param {FastifyRequest} request - Solicitud con el ID del post a eliminar.
- * @param {FastifyReply} reply - Respuesta del servidor.
+ * Delete a post by its ID.
+ * @param {FastifyRequest<{ Params: PostParams }>} request - Request with the ID of the post to be deleted.
+ * @param {FastifyReply} reply - Server response.
+ * @returns {Promise<void>} - Returns nothing directly, but sends the response with the post's deletion status on success.
  */
-export async function deletePost(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+export async function deletePost(request: FastifyRequest<{ Params: PostParams }>, reply: FastifyReply): Promise<void> {
+  const { id } = request.params;
+  const parsed = postParamsSchema.safeParse({ id });
+  if (!parsed.success) {
+    return reply.status(400).send({ error: 'Invalid post ID' });
+  }
+
   try {
-    const { id } = request.params;
-
-    // Eliminación del post de la base de datos
-    await prisma.post.delete({ where: { id: parseInt(id, 10) } });
-
-    // Respuesta de confirmación
+    await postService.deletePost(id);
     reply.status(204).send();
   } catch (error) {
     console.error('Error deleting post:', error);
