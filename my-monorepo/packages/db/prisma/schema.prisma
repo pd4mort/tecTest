@@ -13,13 +13,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  god
+  admin
+  user
+}
+
 model User {
   id        String   @id @default(uuid()) @db.Uuid
   email     String   @unique @db.VarChar(255) // Restricción única y longitud máxima
   name      String   @db.VarChar(255) // Longitud máxima para el nombre
   password  String   @db.VarChar(255) // Longitud máxima para la contraseña
   posts     Post[]
-  role      String?  @default("user")
+  role      UserRole  @default(user)
   profilePicture String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

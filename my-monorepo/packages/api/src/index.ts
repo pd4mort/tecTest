@@ -1,4 +1,3 @@
-// src/index.ts
 import fastify from 'fastify';
 import userRoutes from './routes/userRoutes';
 import postRoutes from './routes/postRoutes';
@@ -19,8 +18,10 @@ server.register(userRoutes, { prefix: config.apiPrefix });
 server.register(postRoutes, { prefix: config.apiPrefix });
 
 // Iniciar el servidor
-server.listen({ port: config.port }, (err, address) => {
+server.listen({ port: parseInt(config.port) }, (err, address) => {
+  
   if (err) {
+    
     console.error(err);
     process.exit(1);
   }
