@@ -1,4 +1,3 @@
-// src/plugins/auth.ts
 import { FastifyPluginCallback, FastifyRequest, FastifyReply } from 'fastify';
 import fastifyJwt from '@fastify/jwt';
 import config from '../config/config';
