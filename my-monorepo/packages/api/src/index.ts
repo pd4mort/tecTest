@@ -4,6 +4,7 @@ import postRoutes from './routes/postRoutes';
 import config from './config/config';
 import auth from './plugins/auth';
 import fastifyMultipart from '@fastify/multipart';
+import websocketServer from '@my-monorepo/services/notifications/websocketServer';
 
 const server = fastify();
 
@@ -25,5 +26,9 @@ server.listen({ port: parseInt(config.port) }, (err, address) => {
     console.error(err);
     process.exit(1);
   }
+
+  console.log('Starting WebSocket server...');
+  websocketServer;
+
   console.log(`Server listening at ${address}`);
 });

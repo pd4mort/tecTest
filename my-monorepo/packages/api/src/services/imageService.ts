@@ -1,6 +1,8 @@
 import { FastifyRequest } from 'fastify';
 import { uploadImage, getImageUrl } from '@my-monorepo/services/firebase/imageService';
 import prisma from '@my-monorepo/db/src/prismaClient';
+import { JwtPayload } from 'src/types/authTypes';
+import { UserRole } from '../types/userTypes';
 
 /**
  * Handles uploading a profile picture for a user.
@@ -11,6 +13,13 @@ import prisma from '@my-monorepo/db/src/prismaClient';
  */
 export async function uploadProfilePictureService(userId: string, request: FastifyRequest): Promise<string> {
   try {
+    const currentUser = request.user as JwtPayload;
+
+    // Check if the current user is the owner or has the role of 'god'
+    if (currentUser.id !== userId && currentUser.role !== UserRole.God) {
+      throw new Error('Unauthorized: You do not have permission to perform this action');
+    }
+
     // Obtain the file from the request
     const data = await request.file();
 

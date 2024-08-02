@@ -3,6 +3,7 @@ import * as postService from '../services/postService';
 import { PostBody, PostParams } from '../types/postTypes';
 import { createPostSchema, updatePostSchema, postParamsSchema } from '../validations/postValidation';
 import { JwtPayload } from '../types/authTypes';
+import { notifyAllClients } from '@my-monorepo/services/notifications/websocketServer';
 
 /**
  * Create a new post.
@@ -20,6 +21,10 @@ export async function createPostController(request: FastifyRequest<{ Body: PostB
     const user = request.user as JwtPayload;
     const post = await postService.createPost({ ...parsed.data, authorId: user.id });
     reply.status(201).send(post);
+
+    const messageData = { text:'New post available => ' + post.title };
+    createNewMessage(messageData);
+
   } catch (error) {
     console.error('Error creating post:', error);
     reply.status(500).send({ error: 'Error creating post' });
@@ -95,6 +100,11 @@ export async function updatePostController(request: FastifyRequest<{ Params: Pos
       reply.status(404).send({ error: 'Post not found' });
       return;
     }
+
+    //notification
+    const messageData = { text:'Post update => ' + post.title };
+    createNewMessage(messageData);
+
     reply.send(post);
   } catch (error) {
     console.error('Error updating post:', error);
@@ -122,4 +132,10 @@ export async function deletePostController(request: FastifyRequest<{ Params: Pos
     console.error('Error deleting post:', error);
     reply.status(500).send({ error: 'Error deleting post' });
   }
+}
+
+//notifications
+async function createNewMessage(messageData: { text: string; }) {
+  
+  notifyAllClients('New message: ' + messageData.text);
 }

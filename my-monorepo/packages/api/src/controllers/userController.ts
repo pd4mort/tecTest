@@ -3,6 +3,7 @@ import { UserBody, UserParams, UserRole  } from '../types/userTypes';
 import { JwtPayload } from '../types/authTypes';
 import { createUser, deleteUser, getAllUsers, getUserById, updateUser } from '../services/userService';
 import { uploadProfilePictureService } from '../services/imageService';
+import { notifyAllClients } from '@my-monorepo/services/notifications/websocketServer';
 
 
 /**
@@ -37,6 +38,10 @@ export async function createUserController(request: FastifyRequest<{ Body: UserB
 
     // Respond with the created user
     reply.status(201).send(user);
+
+    //notification
+    const messageData = { text:'New member => ' + user.name };
+    createNewMessage(messageData);
   } catch (error) {
     console.error('Error creating user:', error);
     reply.status(500).send({ error: 'Error creating user' });
@@ -170,6 +175,7 @@ export async function uploadProfilePictureController(request: FastifyRequest, re
 
     // Respond with the image URL
     reply.send({ imageUrl });
+
   } catch (error) {
     console.error('Error uploading profile picture:', error);
     
@@ -180,4 +186,10 @@ export async function uploadProfilePictureController(request: FastifyRequest, re
       reply.status(500).send({ error: 'Unexpected error occurred' });
     }
   }
+}
+
+//notifications
+async function createNewMessage(messageData: { text: string; }) {
+  
+  notifyAllClients('New message: ' + messageData.text);
 }
