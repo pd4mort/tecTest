@@ -5,8 +5,12 @@ import config from './config/config';
 import auth from './plugins/auth';
 import fastifyMultipart from '@fastify/multipart';
 import websocketServer from '@my-monorepo/services/notifications/websocketServer';
+import { setupSwagger } from '../swagger'; 
 
 const server = fastify();
+
+// Swagger config
+setupSwagger(server);
 
 // Register the plugin to handle multipart/form-data
 server.register(fastifyMultipart);

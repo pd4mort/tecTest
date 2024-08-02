@@ -9,5 +9,16 @@
     "build": "yarn workspace @my-monorepo/db generate && yarn workspace api build",
     "start": "yarn workspace api start",
     "dev": "yarn workspace api dev"
+  },
+  "dependencies": {
+    "@fastify/swagger": "^8.15.0",
+    "@fastify/swagger-ui": "^4.0.1",
+    "swagger-jsdoc": "^6.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.1.0",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
   }
 }
