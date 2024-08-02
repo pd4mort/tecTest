@@ -1,7 +1,29 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
-import prisma from '@my-monorepo/db/src/prismaClient';
 import { UserBody, UserParams, UserRole  } from '../types/userTypes';
 import { JwtPayload } from '../types/authTypes';
+import { createUser, deleteUser, getAllUsers, getUserById, updateUser } from '../services/userService';
+import { uploadProfilePictureService } from '../services/imageService';
+import { notifyAllClients } from '@my-monorepo/services/notifications/websocketServer';
+
+
+/**
+ * Retrieves all users from the database.
+ * @param {FastifyRequest} request - The Fastify request object.
+ * @param {FastifyReply} reply - The Fastify reply object.
+ * @returns {Promise<void>} - Sends a response with the list of all users or an error message.
+ */
+export async function getAllUsersController(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  try {
+    // Fetch all users from the service
+    const users = await getAllUsers();
+
+    // Send the list of users in the response
+    reply.send(users);
+  } catch (error) {
+    console.error('Error retrieving users:', error);
+    reply.status(500).send({ error: 'Error retrieving users' });
+  }
+}
 
 /**
  * Creates a new user.
@@ -9,17 +31,17 @@ import { JwtPayload } from '../types/authTypes';
  * @param {FastifyReply} reply - Server response.
  * @returns {Promise<void>} - Returns nothing directly, but sends the response with the created user upon success.
  */
-export async function createUser(request: FastifyRequest<{ Body: UserBody }>, reply: FastifyReply): Promise<void> {
+export async function createUserController(request: FastifyRequest<{ Body: UserBody }>, reply: FastifyReply): Promise<void> {
   try {
-    const { email, name, password, role } = request.body;
-
-    // Create the user in the database
-    const user = await prisma.user.create({
-      data: { email, name, password, role }
-    });
+    // Validate and create user using the service
+    const user = await createUser(request.body);
 
     // Respond with the created user
     reply.status(201).send(user);
+
+    //notification
+    const messageData = { text:'New member => ' + user.name };
+    createNewMessage(messageData);
   } catch (error) {
     console.error('Error creating user:', error);
     reply.status(500).send({ error: 'Error creating user' });
@@ -32,23 +54,28 @@ export async function createUser(request: FastifyRequest<{ Body: UserBody }>, re
  * @param {FastifyReply} reply - Server response.
  * @returns {Promise<void>} - Returns nothing directly, but sends the response with the requested user upon success.
  */
-export async function getUserById(request: FastifyRequest<{ Params: UserParams }>, reply: FastifyReply): Promise<void> {
+export async function getUserByIdController(request: FastifyRequest<{ Params: UserParams }>, reply: FastifyReply): Promise<void> {
   try {
     const { id } = request.params;
 
-    // Fetch the user from the database
-    const user = await prisma.user.findUnique({ where: { id } });
-
-    if (!user) {
-      reply.status(404).send({ error: 'User not found' });
-      return;
-    }
+    // Fetch the user using the service
+    const user = await getUserById(id);
 
     // Respond with the found user
     reply.send(user);
   } catch (error) {
     console.error('Error retrieving user:', error);
-    reply.status(500).send({ error: 'Error retrieving user' });
+
+    // Check if error is an instance of Error
+    if (error instanceof Error) {
+      if (error.message === 'User not found') {
+        reply.status(404).send({ error: 'User not found' });
+      } else {
+        reply.status(500).send({ error: 'Error retrieving user' });
+      }
+    } else {
+      reply.status(500).send({ error: 'Unexpected error occurred' });
+    }
   }
 }
 
@@ -58,7 +85,7 @@ export async function getUserById(request: FastifyRequest<{ Params: UserParams }
  * @param {FastifyReply} reply - Server response.
  * @returns {Promise<void>} - Returns nothing directly, but sends the response with the updated user upon success.
  */
-export async function updateUser(request: FastifyRequest<{ Params: UserParams; Body: Partial<UserBody> }>, reply: FastifyReply): Promise<void> {
+export async function updateUserController(request: FastifyRequest<{ Params: UserParams; Body: Partial<UserBody> }>, reply: FastifyReply): Promise<void> {
   try {
     const { id } = request.params;
     const { email, name, password, role } = request.body;
@@ -71,28 +98,31 @@ export async function updateUser(request: FastifyRequest<{ Params: UserParams; B
     }
 
     // Users with 'user' role cannot change their own role
-    const updateData: Partial<UserBody> = { email, name, password };
     if (user.role !== UserRole.God && user.role !== UserRole.Admin && role) {
       reply.status(403).send({ error: 'Forbidden: You cannot change your role' });
       return;
     }
 
-    // If the user has the necessary permissions, they can update the role
-    if (role) {
+    // Prepare the data for updating
+    const updateData: Partial<UserBody> = { email, name, password };
+    if (user.role === UserRole.God || user.role === UserRole.Admin) {
       updateData.role = role;
     }
 
     // Update the user in the database
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: updateData
-    });
+    const updatedUser = await updateUser(id, updateData);
 
     // Respond with the updated user
     reply.send(updatedUser);
   } catch (error) {
     console.error('Error updating user:', error);
-    reply.status(500).send({ error: 'Error updating user' });
+
+    // Handle error
+    if (error instanceof Error) {
+      reply.status(500).send({ error: error.message });
+    } else {
+      reply.status(500).send({ error: 'Unexpected error occurred' });
+    }
   }
 }
 
@@ -102,7 +132,7 @@ export async function updateUser(request: FastifyRequest<{ Params: UserParams; B
  * @param {FastifyReply} reply - Server response.
  * @returns {Promise<void>} - Returns nothing directly, but sends the response with the user deletion status upon success.
  */
-export async function deleteUser(request: FastifyRequest<{ Params: UserParams }>, reply: FastifyReply): Promise<void> {
+export async function deleteUserController(request: FastifyRequest<{ Params: UserParams }>, reply: FastifyReply): Promise<void> {
   try {
     const { id } = request.params;
     const user = request.user as JwtPayload;
@@ -113,13 +143,53 @@ export async function deleteUser(request: FastifyRequest<{ Params: UserParams }>
       return;
     }
 
-    // Delete the user from the database
-    await prisma.user.delete({ where: { id } });
+    // Use the service to delete the user
+    await deleteUser(id);
 
     // Respond with no content
     reply.status(204).send();
   } catch (error) {
     console.error('Error deleting user:', error);
-    reply.status(500).send({ error: 'Error deleting user' });
+
+    // Handle error
+    if (error instanceof Error) {
+      reply.status(500).send({ error: error.message });
+    } else {
+      reply.status(500).send({ error: 'Unexpected error occurred' });
+    }
   }
+}
+
+/**
+ * Handles uploading a profile picture.
+ * @param {FastifyRequest} request - The Fastify request object.
+ * @param {FastifyReply} reply - The Fastify reply object.
+ * @returns {Promise<void>} - Sends a response with the URL of the uploaded image or an error message.
+ */
+export async function uploadProfilePictureController(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+  try {
+    const user = request.user as JwtPayload;
+    
+    // Handle the file upload using the service
+    const imageUrl = await uploadProfilePictureService(user.id, request);
+
+    // Respond with the image URL
+    reply.send({ imageUrl });
+
+  } catch (error) {
+    console.error('Error uploading profile picture:', error);
+    
+    // Handle error
+    if (error instanceof Error) {
+      reply.status(500).send({ error: error.message });
+    } else {
+      reply.status(500).send({ error: 'Unexpected error occurred' });
+    }
+  }
+}
+
+//notifications
+async function createNewMessage(messageData: { text: string; }) {
+  
+  notifyAllClients('New message: ' + messageData.text);
 }

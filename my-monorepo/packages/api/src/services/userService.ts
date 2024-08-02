@@ -1,6 +1,7 @@
 import prisma from '@my-monorepo/db/src/prismaClient';
 import { UserBody, UserRole } from '../types/userTypes';
 import { createUserSchema, updateUserSchema, userParamsSchema } from '../validations/userValidation';
+import { hashPassword } from './authService';
 
 /**
  * Service to fetch all users.
@@ -18,6 +19,35 @@ export async function getAllUsers(): Promise<UserBody[]> {
   } catch (error) {
     console.error('Error fetching users:', error);
     throw new Error('Error fetching users');
+  }
+}
+
+/**
+ * Service to create a new user.
+ * @param {UserBody} userData - The data of the user to create.
+ * @returns {Promise<UserBody>} - Returns a promise that resolves with the created user.
+ * @throws {Error} - Throws an error if the user data is invalid or if there is an issue creating the user.
+ */
+export async function createUser(userData: UserBody): Promise<UserBody> {
+  const parsed = createUserSchema.safeParse(userData);
+  if (!parsed.success) {
+    throw new Error('Invalid user data');
+  }
+
+  try {
+    const { email, name, password, role } = parsed.data;
+    const hashedPassword = await hashPassword(password);
+    const createdUser = await prisma.user.create({
+      data: { email, name, password: hashedPassword, role }
+    });
+    return {
+      ...createdUser,
+      profilePicture: createdUser.profilePicture ?? undefined,
+      role: createdUser.role as UserRole
+    };
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw new Error('Error creating user');
   }
 }
 
@@ -48,34 +78,6 @@ export async function getUserById(id: string): Promise<UserBody> {
   } catch (error) {
     console.error('Error fetching user:', error);
     throw new Error('Error fetching user');
-  }
-}
-
-/**
- * Service to create a new user.
- * @param {UserBody} userData - The data of the user to create.
- * @returns {Promise<UserBody>} - Returns a promise that resolves with the created user.
- * @throws {Error} - Throws an error if the user data is invalid or if there is an issue creating the user.
- */
-export async function createUser(userData: UserBody): Promise<UserBody> {
-  const parsed = createUserSchema.safeParse(userData);
-  if (!parsed.success) {
-    throw new Error('Invalid user data');
-  }
-
-  try {
-    const { email, name, password, role } = parsed.data;
-    const createdUser = await prisma.user.create({
-      data: { email, name, password, role }
-    });
-    return {
-      ...createdUser,
-      profilePicture: createdUser.profilePicture ?? undefined,
-      role: createdUser.role as UserRole
-    }
-  } catch (error) {
-    console.error('Error creating user:', error);
-    throw new Error('Error creating user');
   }
 }
 
