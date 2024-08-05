@@ -9,7 +9,10 @@
     "baseUrl": ".",
     "paths": {
       "@my-monorepo/db": ["../db/src/prismaClient.ts"],
-      "@my-monorepo/services": ["../services/src/imageService.ts"]
+      "@my-monorepo/services": [
+        "../services/firebase/imageService.ts",
+        "../services/notifications/websocketServer.ts"
+      ]
     },
     "typeRoots": ["./src/types", "./node_modules/@types"]
   },

@@ -1,4 +1,9 @@
-// src/types/userTypes.ts
+export enum UserRole{
+  God = 'god',
+  Admin = 'admin',
+  User = 'user'
+}
+
 export interface UserParams {
   id: string;
 }
@@ -7,6 +12,8 @@ export interface UserBody {
   email: string;
   name: string;
   password: string;
-  role: 'god' | 'admin' | 'user';
-  profilePicture?: string;
+  role: UserRole;
+  profilePicture?: string | undefined;
+  createdAt: Date;
+  updatedAt: Date;
 }

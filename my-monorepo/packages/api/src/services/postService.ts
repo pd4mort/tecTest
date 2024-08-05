@@ -1,8 +1,24 @@
+// postService.ts
 import prisma from '@my-monorepo/db/src/prismaClient';
-import { PostBody, PostParams } from '../types/postTypes';
+import { PostBody } from '../types/postTypes';
+import wss from '@my-monorepo/services/notifications/websocketServer';
+import WebSocket from 'ws';
 
-// Get all posts
-export async function getAllPosts() {
+// Notificar a los clientes sobre un nuevo post
+const notifyClients = (message: string) => {
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(message);
+    }
+  });
+};
+
+/**
+ * Obtener todos los posts.
+ * @returns {Promise<PostBody[]>} - Retorna una promesa que resuelve en una lista de posts.
+ * @throws {Error} - Lanza un error si ocurre algún problema al obtener los posts.
+ */
+export async function getAllPosts(): Promise<PostBody[]> {
   try {
     return await prisma.post.findMany();
   } catch (error) {
@@ -11,8 +27,13 @@ export async function getAllPosts() {
   }
 }
 
-// Get a post by ID
-export async function getPostById(id: string) {
+/**
+ * Obtener un post por su ID.
+ * @param {string} id - ID del post a obtener.
+ * @returns {Promise<PostBody>} - Retorna una promesa que resuelve en el post encontrado.
+ * @throws {Error} - Lanza un error si el post no es encontrado.
+ */
+export async function getPostById(id: string): Promise<PostBody> {
   try {
     const post = await prisma.post.findUnique({
       where: { id }
@@ -27,20 +48,37 @@ export async function getPostById(id: string) {
   }
 }
 
-// Create a new post
-export async function createPost(data: PostBody) {
+/**
+ * Crear un nuevo post.
+ * @param {PostBody} data - Datos del post a crear.
+ * @returns {Promise<PostBody>} - Retorna una promesa que resuelve en el post creado.
+ * @throws {Error} - Lanza un error si ocurre algún problema al crear el post.
+ */
+export async function createPost(data: PostBody): Promise<PostBody> {
   try {
-    return await prisma.post.create({
+    const newPost = await prisma.post.create({
       data
     });
+    
+    // Notificar a los clientes sobre el nuevo post
+    notifyClients(`Nuevo post creado: ${newPost.title}`);
+
+    // Retornar el post creado
+    return newPost;
   } catch (error) {
     console.error('Error creating post:', error);
     throw new Error('Error creating post');
   }
 }
 
-// Update an existing post
-export async function updatePost(id: string, data: Partial<PostBody>) {
+/**
+ * Actualizar un post existente.
+ * @param {string} id - ID del post a actualizar.
+ * @param {Partial<PostBody>} data - Datos del post a actualizar.
+ * @returns {Promise<PostBody>} - Retorna una promesa que resuelve en el post actualizado.
+ * @throws {Error} - Lanza un error si ocurre algún problema al actualizar el post.
+ */
+export async function updatePost(id: string, data: Partial<PostBody>): Promise<PostBody> {
   try {
     const post = await prisma.post.update({
       where: { id },
@@ -56,8 +94,12 @@ export async function updatePost(id: string, data: Partial<PostBody>) {
   }
 }
 
-// Delete a post
-export async function deletePost(id: string) {
+/**
+ * Eliminar un post por su ID.
+ * @param {string} id - ID del post a eliminar.
+ * @throws {Error} - Lanza un error si ocurre algún problema al eliminar el post.
+ */
+export async function deletePost(id: string): Promise<void> {
   try {
     await prisma.post.delete({
       where: { id }

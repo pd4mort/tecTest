@@ -11,6 +11,6 @@
       "@my-monorepo/*": ["../*"]
     }
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "firebase/imageService.ts", "notifications/websocketServer.ts"],
   "exclude": ["node_modules"]
 }
