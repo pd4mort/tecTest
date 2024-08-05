@@ -1,5 +1,4 @@
 import fastify from 'fastify';
-import multipart from '@fastify/multipart'; // Asegúrate de importar el plugin correctamente
 import userRoutes from './routes/userRoutes';
 import postRoutes from './routes/postRoutes';
 import config from './config/config';

@@ -1,9 +1,8 @@
-// packages/api/src/swagger.ts
 import FastifySwagger from '@fastify/swagger';
 import FastifySwaggerUi from '@fastify/swagger-ui';
 import { FastifyInstance } from 'fastify';
 
-// Configuración para Swagger
+// Config Swagger
 const swaggerOptions = {
   openapi: {
     info: {

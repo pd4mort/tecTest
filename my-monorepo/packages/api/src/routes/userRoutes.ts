@@ -1,4 +1,3 @@
-// src/routes/userRoutes.ts
 import { FastifyInstance } from 'fastify';
 import { getAllUsersController, getUserByIdController, createUserController, updateUserController, deleteUserController, uploadProfilePictureController } from '../controllers/userController';
 import { loginUser, registerUser } from '../controllers/authController';

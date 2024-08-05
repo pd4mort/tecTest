@@ -4,7 +4,6 @@ const ws = new WebSocket('ws://localhost:8080');
 
 ws.on('open', function open() {
   console.log('Conectado al servidor WebSocket');
-  // Enviar un mensaje de prueba
   ws.send('Hello Server!');
 });
 

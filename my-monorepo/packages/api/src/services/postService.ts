@@ -1,10 +1,9 @@
-// postService.ts
 import prisma from '@my-monorepo/db/src/prismaClient';
 import { PostBody } from '../types/postTypes';
 import wss from '@my-monorepo/services/notifications/websocketServer';
 import WebSocket from 'ws';
 
-// Notificar a los clientes sobre un nuevo post
+// Notify clients for new post
 const notifyClients = (message: string) => {
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
@@ -14,9 +13,9 @@ const notifyClients = (message: string) => {
 };
 
 /**
- * Obtener todos los posts.
- * @returns {Promise<PostBody[]>} - Retorna una promesa que resuelve en una lista de posts.
- * @throws {Error} - Lanza un error si ocurre algún problema al obtener los posts.
+ * Retrieve all posts.
+ * @returns {Promise<PostBody[]>} - Returns a promise resolving to a list of posts.
+ * @throws {Error} - Throws an error if there is any issue fetching posts.
  */
 export async function getAllPosts(): Promise<PostBody[]> {
   try {
@@ -28,10 +27,10 @@ export async function getAllPosts(): Promise<PostBody[]> {
 }
 
 /**
- * Obtener un post por su ID.
- * @param {string} id - ID del post a obtener.
- * @returns {Promise<PostBody>} - Retorna una promesa que resuelve en el post encontrado.
- * @throws {Error} - Lanza un error si el post no es encontrado.
+ * Retrieve a post by its ID.
+ * @param {string} id - ID of the post to retrieve.
+ * @returns {Promise<PostBody>} - Returns a promise resolving to the found post.
+ * @throws {Error} - Throws an error if the post is not found.
  */
 export async function getPostById(id: string): Promise<PostBody> {
   try {
@@ -49,10 +48,10 @@ export async function getPostById(id: string): Promise<PostBody> {
 }
 
 /**
- * Crear un nuevo post.
- * @param {PostBody} data - Datos del post a crear.
- * @returns {Promise<PostBody>} - Retorna una promesa que resuelve en el post creado.
- * @throws {Error} - Lanza un error si ocurre algún problema al crear el post.
+ * Create a new post.
+ * @param {PostBody} data - Data of the post to create.
+ * @returns {Promise<PostBody>} - Returns a promise resolving to the created post.
+ * @throws {Error} - Throws an error if there is any issue creating the post.
  */
 export async function createPost(data: PostBody): Promise<PostBody> {
   try {
@@ -60,10 +59,10 @@ export async function createPost(data: PostBody): Promise<PostBody> {
       data
     });
     
-    // Notificar a los clientes sobre el nuevo post
+     // Notify clients about the new post
     notifyClients(`Nuevo post creado: ${newPost.title}`);
 
-    // Retornar el post creado
+    // Return the created post
     return newPost;
   } catch (error) {
     console.error('Error creating post:', error);
@@ -72,11 +71,11 @@ export async function createPost(data: PostBody): Promise<PostBody> {
 }
 
 /**
- * Actualizar un post existente.
- * @param {string} id - ID del post a actualizar.
- * @param {Partial<PostBody>} data - Datos del post a actualizar.
- * @returns {Promise<PostBody>} - Retorna una promesa que resuelve en el post actualizado.
- * @throws {Error} - Lanza un error si ocurre algún problema al actualizar el post.
+ * Update an existing post.
+ * @param {string} id - ID of the post to update.
+ * @param {Partial<PostBody>} data - Data of the post to update.
+ * @returns {Promise<PostBody>} - Returns a promise resolving to the updated post.
+ * @throws {Error} - Throws an error if there is any issue updating the post.
  */
 export async function updatePost(id: string, data: Partial<PostBody>): Promise<PostBody> {
   try {
@@ -95,9 +94,9 @@ export async function updatePost(id: string, data: Partial<PostBody>): Promise<P
 }
 
 /**
- * Eliminar un post por su ID.
- * @param {string} id - ID del post a eliminar.
- * @throws {Error} - Lanza un error si ocurre algún problema al eliminar el post.
+ * Delete a post by its ID.
+ * @param {string} id - ID of the post to delete.
+ * @throws {Error} - Throws an error if there is any issue deleting the post.
  */
 export async function deletePost(id: string): Promise<void> {
   try {

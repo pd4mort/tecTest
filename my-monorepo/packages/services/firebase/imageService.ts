@@ -1,6 +1,5 @@
 import bucket from "./firebaseConfig";
 
-
 export async function uploadImage(imageBuffer: Buffer, filename: string): Promise<string> {
   const file = bucket.file(filename);
   await file.save(imageBuffer, {

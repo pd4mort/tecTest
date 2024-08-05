@@ -1,4 +1,3 @@
-// packages/services/src/websocketServer.ts
 import WebSocket, { Server } from 'ws';
 
 const wss = new Server({ port: 8080 });
@@ -6,13 +5,13 @@ const wss = new Server({ port: 8080 });
 wss.on('connection', (ws) => {
   console.log('Client connected');
 
-  // Enviar un mensaje de bienvenida al cliente
+  // Send a welcome message to the client
   ws.send('Welcome to WebSocket server');
 
   ws.on('message', (message) => {
     console.log(`Received message => ${message}`);
     
-    // Ejemplo: retransmitir el mensaje a todos los clientes conectados
+    // Example: Broadcast the received message to all connected clients except the sender
     wss.clients.forEach(client => {
       if (client !== ws && client.readyState === WebSocket.OPEN) {
         client.send(message);
@@ -25,7 +24,10 @@ wss.on('connection', (ws) => {
   });
 });
 
-// Función para enviar notificaciones a todos los clientes conectados
+/**
+ * Function to notify all connected clients with a message.
+ * @param {string} message - Message to send to all clients.
+ */
 export function notifyAllClients(message: string) {
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
