@@ -31,12 +31,14 @@ TecTest is a comprehensive technical test project featuring a monorepo API setup
    git clone https://github.com/yourusername/tectest.git
    
 2. Clone the repository:
+   ```bash
    cd my-monorepo
 
-3. Clone the repository:
+4. Clone the repository:
+   ```bash
    yarn install
 
- 4. Set up environment variables:
+ 5. Set up environment variables:
 
     Copy the example environment files:
     ```bash
@@ -44,14 +46,14 @@ TecTest is a comprehensive technical test project featuring a monorepo API setup
       cp package/db/.env.example package/db/.env
   
     Edit the .env files with the required configuration:
-      api/.env:
+      ```bash
       PORT="3000"
       SECRET_JWT="supersecret"
   
     package/db/.env:
       DATABASE_URL="postgresql://postgres:root@localhost:5432/mydb?sch
 
-  5. Generate and configure the `ServiceAccountKey.json` file:
+  6. Generate and configure the `ServiceAccountKey.json` file:
     1. Go to the [Google Cloud Console](https://console.firebase.google.com/).
     2. Navigate to **IAM & Admin** > **Service Accounts**.
     3. Select your project.
