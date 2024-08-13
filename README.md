@@ -21,7 +21,7 @@ TecTest is a comprehensive technical test project featuring a monorepo API setup
 ### Steps
 1. Clone the repository:
     ```bash
-    git clone https://github.com/yourusername/tectest.git
+    git clone https://github.com/pd4mort/tectest.git
     ```
 
 2. Navigate to the project directory:
